@@ -1,0 +1,59 @@
+
+<div class="topBar">
+<input class="itemButton topBarChildren" type="button" onclick="location.href='/product/{{items.1.asin}}?order=score';" value="Order by score" />
+<input class="itemButton topBarChildren" type="button" onclick="location.href='/product/{{items.1.asin}}?order=time';" value="Order by time" />
+<form action="/product/{{items.1.asin}}" method="post">
+  Set Cascade Num (default:2) :
+    <input class="topBarChildren" type="text" name="cascadeNum"></input>
+    <input class="topBarChildren" type="submit"></input>
+</form>
+{{#if cascading}}
+{{#if direction}}
+<p class="topBarChildren">cascadePostive &nbsp;&nbsp;<p>
+{{else}}
+<p class="topBarChildren">cascadeNegative &nbsp;&nbsp;<p>
+{{/if}}
+{{/if}}
+<p class="topBarChildren">threshold is {{threshold}} &nbsp; (this is the percentage of reviews that go contrary to the cascade direction)<p>
+</div>
+
+<div class="reviews">
+  <div class="singleRevRank" >
+  <div class="rankTop" >
+    <div class="leftBar" style="background-color:#DC143C;"><p>5</p></div>
+    <div class="leftBar" style="background-color:#b01030;"><p>4</p></div>
+    <div class="leftBar" style="background-color:#6e0a1e;"><p>3</p></div>
+    <div class="leftBar" style="background-color:#420612;"><p>2</p></div>
+    <div class="leftBar" style="background-color:#160206;"><p>1</p></div>
+  </div>
+  <div class="written1">
+    <p>Rating<p>
+  </div>
+  </div>
+{{#each items}}
+<div class="singleRev">
+  {{#if this.casHere}}
+  <div class="outTop cascadeFlash" style="background-color:pink;"><div class="bar" style="height:{{this.overall}}00px;"></div></div>
+  {{else}}
+  {{#if this.revStat}}
+  <div class="outTop" style="background-color:pink;"><div class="bar" style="height:{{this.overall}}00px;"></div></div>
+  {{else}}
+    <div class="outTop " style="background-color:green;"><div class="bar" style="height:{{this.overall}}00px;"></div></div>
+  {{/if}}
+  {{/if}}
+<div class="written">
+  <p>{{@index}}.<p>
+    <p>revStat.{{this.revStat}}<p>
+    <p>cascade.{{this.cascade}}<p>
+    <p>cascadeUp.{{this.casUp}}<p>
+    <p>revID.{{this.reviewerID}}<p>
+    <p>reviewerName.{{this.reviewerName}}<p>
+    <p>productID.{{this.asin}}<p>
+    <p>unixTime.{{this.unixReviewTime}}<p>
+    <p>summary.{{this.summary}}<p>
+    <p>score.{{this.overall}}<p>
+    <p>helpfulness.{{this.helpful}}<p>
+</div>
+</div>
+{{/each}}
+</div>

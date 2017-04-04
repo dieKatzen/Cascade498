@@ -1,0 +1,65 @@
+.reviews{
+  float:left;
+  float:bottom;
+  overflow-x:scroll;
+  white-space:nowrap;
+}
+
+.singleRev{
+display:inline-block;
+width:185px;
+}
+.singleRevRank{
+display:inline-block;
+width:50px;
+}
+
+.outTop{
+  height:550px;
+  position:relative;
+
+}
+
+.written{
+  max-width:250px;
+  overflow-x:hidden;
+  height:300px;
+
+}
+.written1{
+  width:50px;
+  overflow-x:hidden;
+  height:250px;
+  background-color: #ADD8E6;
+}
+
+.rankTop{
+  height:550px;
+  float:left;
+}
+
+.leftBar{
+position: relative;
+background-color:pink;
+height:100px;
+width:25px;
+border-radius: 10px;
+color:white;
+font-weight: bold;
+}
+
+.leftBar p{
+position: relative;
+top:35px;
+left:7px;
+margin: 0 0 0 0 !important;
+}
+
+.bar{
+background-color:red;
+bottom:0;
+position:absolute;
+width:30px;
+border-radius:100px;
+display:inline-block;
+}

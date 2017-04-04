@@ -1,0 +1,35 @@
+<div class="topBar">
+<input class="itemButton" type="button" onclick="location.href='/product?order=count';" value="Order by Count" />
+<input class="itemButton" type="button" onclick="location.href='/product';" value="Reset Order" />
+</div>
+<div class="prodStats">
+  &nbsp
+  <form action="/product/{{items.1.asin}}" method="post">
+    Set Threshold :
+      <input class="topBarChildren" type="text" name="cascadeNum"></input>
+      <input class="topBarChildren" type="submit"></input>
+  </form>
+</div>
+<div class="productHome">
+{{#each products}}
+<div class="singleItem" >
+<div class="item">
+  <p> Dir:
+  {{#if this.up}}
+  up
+  {{/if}}
+  {{#if this.down}}
+  down
+  {{/if}}
+    <p>{{@index}}.<p>
+    <p>Thres: {{this.threshold}}<p>
+    <p>PID: {{this.asin}}<p>
+    <p> #: {{this.count}}<p>
+<input class="itemButton" type="button" onclick="location.href='/product/{{this.asin}}';" value="product analytics" />
+</div>
+</div>
+{{/each}}
+<!-- <p>{{debug}}<p>
+<p>{{test}}<p>
+  <p>HEY<p> -->
+</div>

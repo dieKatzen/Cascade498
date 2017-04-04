@@ -1,0 +1,91 @@
+.productHome{
+  float:left;
+}
+
+.topBar{
+  width:100%;
+  height: 50px;
+  background-color: yellow;
+}
+
+.singleItem{
+float:left;
+width: 200px;
+height: 200px;
+border: 3px;
+border-style: solid;
+border-color: red;
+border-radius: 30px;
+margin: 0 4px 4px 0;
+
+transition: background-color 0.5s ease;
+}
+
+.singleItem:hover{
+  background-color: yellow;
+}
+
+.item {
+  width: 120px;
+  margin: auto;
+}
+
+.cascadeUp{
+  width:50px;
+  heigh:50px;
+  border-radius: 25px;
+  border-width: 5px;
+  border-style: solid;
+}
+
+.cascadeDown{
+  width:50px;
+  height:50px;
+  border-radius: 25px;
+  border-width: 5pxpx;
+  border-style: solid;
+}
+
+.topBarChildren{
+  float:left;
+  display:inline-block;
+}
+
+.rightInfo{
+  border-width:2px;
+  border-color: green;
+  border-radius: 5px;
+  height: 15px;
+  width: 15px;
+}
+
+.prodstats{
+  float:left;
+  width: 98%;
+  height: 200px;
+  border-width: 4px;
+  border-style: solid;
+  border-color: black;
+  border-radius: 30px;
+  margin: 0 5px 1px 0;
+}
+
+.cascadeFlash{
+animation: flash 2s infinite;
+}
+
+@-webkit-keyframes flash {
+    0% {
+        background-color: Yellow;
+        opacity:1;
+    }
+    100% {
+        background-color: white;
+    }
+}
+/*.itemButton{
+  border-style:solid;
+  border:2px;
+  border-color:black;
+  border-radius:2px;
+}*/
