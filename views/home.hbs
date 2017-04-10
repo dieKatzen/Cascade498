@@ -1,59 +1,113 @@
+<main class="container">
+	<div class="row">
+		<div class="col-sm-12">
+			<h1>Product {{this._id}}</h1>
+			<a href="/" class="btn btn-default">Back to products</a>
+		</div>
+	</div>
+	<div class="row">
+		<div class="col-md-8">
+			<dl>
+				<dt>Score</dt>
+				<dd>{{this.score}}</dd>
+				<dt>Review Count</dt>
+				<dd>{{this.reviewCount}}</dd>
+				<dt>Threshold</dt>
+				<dd>{{this.threshold}}</dd>
+				<dt>Cascading</dt>
+				<dd>{{this.cascadeDirection}}</dd>
+			</dl>
+			<h2>Most helpful review</h2>
+			<dl>
+				<dt>Review index</dt>
+				<dd>{{this.helpful.index}}</dd>
+				<dt>Review helpfulness count</dt>
+				<dd>{{this.helpful.helpfulness}}</dd>
+				<dt>Score</dt>
+				<dd>{{this.helpful.score}}</dd>
+				<dt>Threshold after review</dt>
+				<dd>{{this.helpful.threshold}}</dd>
+				<dt>Cascade direction after review</dt>
+				<dd>{{this.helpful.cascadeDirection}}</dd>
+			</dl>
+		</div>
+		<div class="col-md-4">
+			<canvas id="pieChart" width="300" height="300"></canvas>
+		</div>
+	</div>
+	<div class="row">
+		<div class="col-sm-12">
+			<canvas id="productChart" width="1000" height="400"></canvas>
+		</div>
+	</div>
+</main>
+<script>
+	var ctx = document.getElementById("productChart");
+	var pieChart = document.getElementById("pieChart");
 
-<div class="topBar">
-<input class="itemButton topBarChildren" type="button" onclick="location.href='/product/{{items.1.asin}}?order=score';" value="Order by score" />
-<input class="itemButton topBarChildren" type="button" onclick="location.href='/product/{{items.1.asin}}?order=time';" value="Order by time" />
-<form action="/product/{{items.1.asin}}" method="post">
-  Set Cascade Num (default:2) :
-    <input class="topBarChildren" type="text" name="cascadeNum"></input>
-    <input class="topBarChildren" type="submit"></input>
-</form>
-{{#if cascading}}
-{{#if direction}}
-<p class="topBarChildren">cascadePostive &nbsp;&nbsp;<p>
-{{else}}
-<p class="topBarChildren">cascadeNegative &nbsp;&nbsp;<p>
-{{/if}}
-{{/if}}
-<p class="topBarChildren">threshold is {{threshold}} &nbsp; (this is the percentage of reviews that go contrary to the cascade direction)<p>
-</div>
+	var dataSet,
+		reviews = [],
+		reviewsPie = [],
+		reviewsTime = [],
+		reviewsColor = [],
+		helpfulIndex = {{this.helpful.offset}};
 
-<div class="reviews">
-  <div class="singleRevRank" >
-  <div class="rankTop" >
-    <div class="leftBar" style="background-color:#DC143C;"><p>5</p></div>
-    <div class="leftBar" style="background-color:#b01030;"><p>4</p></div>
-    <div class="leftBar" style="background-color:#6e0a1e;"><p>3</p></div>
-    <div class="leftBar" style="background-color:#420612;"><p>2</p></div>
-    <div class="leftBar" style="background-color:#160206;"><p>1</p></div>
-  </div>
-  <div class="written1">
-    <p>Rating<p>
-  </div>
-  </div>
-{{#each items}}
-<div class="singleRev">
-  {{#if this.casHere}}
-  <div class="outTop cascadeFlash" style="background-color:pink;"><div class="bar" style="height:{{this.overall}}00px;"></div></div>
-  {{else}}
-  {{#if this.revStat}}
-  <div class="outTop" style="background-color:pink;"><div class="bar" style="height:{{this.overall}}00px;"></div></div>
-  {{else}}
-    <div class="outTop " style="background-color:green;"><div class="bar" style="height:{{this.overall}}00px;"></div></div>
-  {{/if}}
-  {{/if}}
-<div class="written">
-  <p>{{@index}}.<p>
-    <p>revStat.{{this.revStat}}<p>
-    <p>cascade.{{this.cascade}}<p>
-    <p>cascadeUp.{{this.casUp}}<p>
-    <p>revID.{{this.reviewerID}}<p>
-    <p>reviewerName.{{this.reviewerName}}<p>
-    <p>productID.{{this.asin}}<p>
-    <p>unixTime.{{this.unixReviewTime}}<p>
-    <p>summary.{{this.summary}}<p>
-    <p>score.{{this.overall}}<p>
-    <p>helpfulness.{{this.helpful}}<p>
-</div>
-</div>
-{{/each}}
-</div>
+	{{#each this.reviews}}
+		reviewsTime.push({{this.unixTime}});
+		reviewsPie.push({{this.score}});
+		if ({{@index}} == helpfulIndex)
+			reviewsColor.push('#FFCF40');
+		else
+			reviewsColor.push({{this.score}} > 3 ? '#8de098' : '#e24d4d');
+	{{/each}}
+
+	var myChart = new Chart(ctx, {
+		type: 'bar',
+		data: {
+			labels: reviewsTime,
+			datasets: [{
+				label: 'Reviews',
+				data: reviewsPie,
+				backgroundColor: reviewsColor,
+				borderColor: reviewsColor,
+				borderWidth: 1
+			}]
+		},
+		options: {
+			legend: {
+				display: false
+			},
+			scales: {
+				yAxes: [{
+					ticks: {
+						min: 0,
+						max: 5
+					}
+				}]
+			}
+		}
+	});
+
+	var myPieChart = new Chart(pieChart,{
+		type: 'pie',
+		data: {
+			labels: [
+				"Low",
+				"High"
+			],
+			datasets: [
+				{
+					data: [{{this.helpful.high}}, {{this.helpful.low}}],
+					backgroundColor: [
+						"#8de098",
+						"#e24d4d"
+					],
+					hoverBackgroundColor: [
+						"#8de098",
+						"#e24d4d"
+					]
+				}
+			]
+		}
+	});
+</script>

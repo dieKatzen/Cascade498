@@ -1,3 +1,4 @@
+'use strict';
 
 /*jshint esversion: 6 */
 
@@ -5,265 +6,279 @@ const path = require('path');
 const express = require('express');
 const exphbs = require('express-handlebars');
 const app = express();
-const assert = require('assert');
 const bodyParser = require('body-parser');
 
 var MongoClient = require('mongodb').MongoClient;
+var db;
 
-MongoClient.connect('mongodb://localhost:27017/local', function (err, db) {
+//getProducts(function (results) {});
 
-  if (!err) {
-    console.log('We are connected');
+// Connect to the database
+function getProducts(callback) {
+	MongoClient.connect('mongodb://localhost:27017/reviews', function (err, reviewsDB) {
+		db = reviewsDB;
+		if (!err) {
+			reviewsDB.collection('ranged', function (err, collection) {
+				// create an object from the database
+				collection.find().toArray(function (err, results) {
+					checkCascading(results, function (cascadingObject) {
+						if (typeof callback === 'function') {
+							callback(cascadingObject);
+						}
+					});
+				});
+			});
+		}
+	});
+}
 
-    collection = db.collection('med_elet').find().toArray();
-    console.log(collection);
-    collection.then(function (result) {
-      // console.log(result)
-      console.log(result);
-      dataString = dataString + ' ' + result;
-      console.log(dataString);
-    });
+// Check the cascading effect of each product
+function checkCascading(products, callback) {
+	var cascadedObject = [];
 
-  }
-});
+	for (var i = 0; i < products.length; i++) {
+		var product = products[i],
+			cascade = false,
+			cascadingDown = false,
+			cascadingUp = false,
+			cascadeNumber = 2,
+			cascadeCount = 0,
+			goodReviewCount = 0,
+			badReviewCount = 0,
+			threshold,
+			cascadeDirection = 'No cascading';
+
+		for (var j = 0; j < product.reviews.length; j++) {
+			var review = product.reviews[j];
+
+			if (!cascade) {
+				if (cascadeCount == cascadeNumber) {
+					cascade = true;
+					cascadingUp = true;
+					goodReviewCount++;
+				}
+
+				if (cascadeCount == -(cascadeNumber)) {
+					cascade = true;
+					cascadingDown = true;
+					badReviewCount++;
+				}
+
+				if (review.score > 3) {
+					cascadeCount++;
+				} else {
+					cascadeCount--;
+				}
+			} else {
+				if (review.score > 3) {
+					goodReviewCount++;
+				} else {
+					badReviewCount++;
+				}
+			}
+		};
+
+		if (cascade && cascadingUp) {
+			threshold = parseFloat(badReviewCount / product.count).toFixed(4);
+			cascadeDirection = 'Up';
+		} else if (cascade && cascadingDown) {
+			threshold = parseFloat(goodReviewCount / product.count).toFixed(4);
+			cascadeDirection = 'Down';
+		}
+
+		var document = {
+			_id: product._id,
+			score: product.score.toFixed(2),
+			reviewCount: product.count,
+			cascadeDirection: cascadeDirection,
+			threshold: threshold,
+			reviews: product.reviews
+		};
+
+		cascadedObject.push(document);
+
+		db.collection('cascade', function (err, collection) {
+			collection.insert(document, { w: 1 }, function (err, records) {
+				console.log("Record added.");
+			});
+		});
+
+		if (typeof callback === 'function') {
+			callback(cascadedObject);
+		}
+	}
+}
 
 app.use(express.static(path.join(__dirname, 'asset')));
 app.use(bodyParser.urlencoded({
-  extended: true,
+	extended: true,
 }));
 app.use(bodyParser.json());
 
 app.use((request, response, next) => {
-  console.log(request.headers);
-  next();
+	console.log(request.headers);
+	next();
 });
 
 app.use((err, request, response, next) => {
-  // log the error, for now just console.log
-  console.log(err);
-  response.status(500).send('Something broke!');
+	// log the error, for now just console.log
+	console.log(err);
+	response.status(500).send('Something broke!');
 });
 
 var hbs = exphbs.create({
-    // Specify helpers which are only registered on this instance.
-    helpers: {
+	// Specify helpers which are only registered on this instance.
+	helpers: {
 
-        test: function () { return 'TEST HELPER WORKS!'; },
+		test: function () { return 'TEST HELPER WORKS!'; },
 
-      },
-  });
+	},
+});
 
 app.engine('.hbs', exphbs({
-  defaultLayout: 'main',
-  extname: '.hbs',
-  layoutsDir: path.join(__dirname, 'views/layouts'),
+	defaultLayout: 'main',
+	extname: '.hbs',
+	layoutsDir: path.join(__dirname, 'views/layouts'),
 }));
 
 app.set('view engine', '.hbs');
 app.set('views', path.join(__dirname, 'views'));
 
-app.get('/product', (request, response, next) => {
+app.get('/', (request, response, next) => {
+	MongoClient.connect('mongodb://localhost:27017/reviews', function (err, db) {
+		db.collection('cascade', function (err, collection) {
+			// create an object from the database
+			collection.find().toArray(function (err, results) {
+				var averageScore = 0,
+					averageThreshold = 0,
+					brackets = [0,0,0,0,0,0,0,0,0,0];
 
-  var prodArray = [];
+				for (var i = 0; i < results.length; i++) {
+					averageScore += parseFloat(results[i].score);
+					averageThreshold += parseFloat(results[i].threshold);
 
-  var order = request.query.order || 'count';
-  console.log('hi yall' + request.query.order);
+					var index = parseFloat(results[i].threshold).toFixed(1) * 10;
+					brackets[index]++;
+				}
 
-  MongoClient.connect('mongodb://localhost:27017/local', function (err, db) {
-    let prodPromise = new Promise((resolve, reject)=> {
-      let temp = ' ';
-      let cnt = 1;
-      let cntResolver = 0;
-      let thresString = '';
-      let tUp;
-      let tDown;
-      db.collection('med_elet').find().forEach(function (doc) {
+				averageScore = (averageScore / results.length).toFixed(2);
+				averageThreshold = (averageThreshold / results.length).toFixed(4);
 
-        cntResolver++;
-        if (doc.asin == temp) {
-          thresString = doc.threshold;
-          tUp = doc.up;
-          tDown = doc.down;
-          cnt++;
-        }else {
-          if (cnt != 1) {
-            console.log(thresString, temp, cnt);
-            prodArray.push({ asin: temp, count: cnt, threshold: thresString,
-              up: tUp, down: tDown, });
-            cnt = 1;
-          }
-
-          temp = doc.asin;
-        }
-
-        if (cntResolver == 1000) {
-          resolve(prodArray);
-        }
-      });
-
-    });
-
-    prodPromise.then((val)=> {
-      if (order == 'count') {
-        val = val.sort(function (a, b) {
-            return a.count - b.count;
-          });
-      }
-
-      console.log(val);
-      response.render('products',
-      { products: val,
-        helpers: {
-
-          test: function () { return 'TEST HELPER WORKS!'; },
-        },
-      });
-    }).catch(reason => console.log(reason));
-
-  });
+				response.render('products', {
+					products: results,
+					averageScore: averageScore,
+					averageThreshold: averageThreshold,
+					brackets: brackets,
+					count: results.length
+				});
+			});
+		});
+	});
 });
 
-let casNum = 2;
+app.get('/:id', (request, response, next) => {
+		MongoClient.connect('mongodb://localhost:27017/reviews', function (err, db) {
+		db.collection('cascade', function (err, collection) {
+			// create an object from the database
+			collection.find({ "_id": request.params.id }).toArray(function (err, results) {
+				var product = results[0];
+				product.helpful = findMostHelpful(product);
 
-app.post('/product/:id', function (res, req, next) {
-
-  console.log('HERERERERE' + req.body);
-  console.log(req.body.cascadeNum);
-  next();
+				response.render('home', product);
+			});
+		});
+	});
 });
 
-app.get('/product/:id', (request, response, next) => {
+function findMostHelpful(singleProduct, callback) {
+	var max = 0,
+		offset = 0,
+		score,
+		helpfulness,
+		highScores = 0,
+		lowScores = 0;
 
-  let order = request.query.order || 'time';
+	for (var i = 0; i < singleProduct.reviews.length; i++) {
+		var review = singleProduct.reviews[i],
+		    helpful = review.helpful[0];
 
-  var itemNumber = "'" + request.params.id + "'";
-  console.log(itemNumber);
+		if (helpful > max) {
+			max = helpful;
+			helpfulness = helpful;
+			offset = i;
+			score = review.score
+		}
+		if (review.score > 3)
+			highScores++;
+		else
+			lowScores++;
+	}
 
-  var query = '{asin :' + "'" + request.params.id + "'" + '}';
-  console.log(query);
+	var helpfulReview = helpfulCascade(offset, singleProduct);
+	helpfulReview.score = score;
+	helpfulReview.helpfulness = helpfulness;
+	helpfulReview.offset = offset;
+	helpfulReview.high = highScores;
+	helpfulReview.low = lowScores;
 
-  var name = 'asin';
-  var value1 =  request.params.id;
-  var query1 = {};
-  query1[name] = value1;
-  console.log(query1);
+	return helpfulReview;
+}
 
-  var dataArray = [];
-  var scoreArray = [];
+function helpfulCascade(offset, product) {
+	var reviews = product.reviews,
+		threshold,
+		cascade = false,
+		cascadingDown = false,
+		cascadingUp = false,
+		cascadeNumber = 2,
+		cascadeCount = 0,
+		goodReviewCount = 0,
+		badReviewCount = 0,
+		cascadeDirection = 'No cascading';
 
-  MongoClient.connect('mongodb://localhost:27017/local', function (err, db) {
+	for (var j = offset; j < reviews.length; j++) {
+		var review = reviews[j];
 
-    let dbPromise = new Promise((resolve, reject) => {
-          let cntResolver = 0;
-          db.collection('med_elet').find({ asin: value1 }).forEach(function (doc) {
-            cntResolver++;
-            console.log('YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY');
-            if (doc.overall > 3) {
-              doc.revStat = true;
-            }else {
-              doc.revStat = false;
-            }
+		if (!cascade) {
+			if (cascadeCount >= cascadeNumber) {
+				cascade = true;
+				cascadingUp = true;
+				goodReviewCount++;
+			}
 
-            dataArray.push(doc);
-            scoreArray.push(doc.overall);
-            console.log('wtf');
-          });
+			if (cascadeCount <= -(cascadeNumber)) {
+				cascade = true;
+				cascadingDown = true;
+				badReviewCount++;
+			}
 
-          setTimeout(function () {
-                  if (order == 'time') {
-                    prodArray = dataArray.sort(function (a, b) {
-                        return a.unixReviewTime - b.unixReviewTime;
-                      });
-                  }
+			if (review.score > 3) {
+				cascadeCount++;
+			} else {
+				cascadeCount--;
+			}
+		} else {
+			if (review.score > 3) {
+				goodReviewCount++;
+			} else {
+				badReviewCount++;
+			}
+		}
+	};
 
-                  if (order == 'score') {
-                    prodArray = dataArray.sort(function (a, b) {
-                        return a.overall - b.overall;
-                      });
-                  }
+	if (cascade && cascadingUp) {
+		threshold = parseFloat(badReviewCount / product.reviewCount).toFixed(4);
+		cascadeDirection = 'Up';
+	} else if (cascade && cascadingDown) {
+		threshold = parseFloat(goodReviewCount / product.reviewCount).toFixed(4);
+		cascadeDirection = 'Down';
+	}
 
-                  // if (order == 'time') {
-                  //   prodArray = dataArray.sort(function (a, b) {
-                  //       return a.unixReviewTime - b.unixReviewTime;
-                  //     });
-                  // });
-
-                }, 1000);
-
-          setTimeout(function () {
-              resolve(dataArray);
-            }, 1000);
-
-        });
-
-    let cntCascade = 0;
-    let cascade = false;
-    let up;
-    let down;
-    let goodRev = 0;
-    let badRev  = 0;
-    let thres = 0;
-
-    dbPromise
-    .then((data)=> {
-
-      data.forEach((e, index, arr)=> {
-        if (!cascade) {
-          if (cntCascade == casNum) {
-            cascade = true;
-            arr[index].casUp = true;
-            arr[index].casHere = true;
-            goodRev++;
-            up = true;
-          }
-
-          if (cntCascade == -(casNum)) {
-            cascade = true;
-            arr[index].casDown = true;
-            arr[index].casHere = true;
-            badRev++;
-            down = true;
-          }
-
-          if (e.overall > 3) {
-            console.log('blahblahblue');
-            cntCascade = cntCascade + 1;
-          }else {
-            cntCascade = cntCascade - 1;
-          }
-        }else {
-          if (e.overall > 3) {
-            goodRev++;
-          }else {
-            badRev++;
-          }
-        }
-
-      });
-
-      let totalAfterCascade =  goodRev + badRev;
-
-      if (cascade && up) {
-        thres = parseFloat(badRev / totalAfterCascade).toFixed(4);
-      }
-
-      if (cascade && down) {
-        thres = parseFloat(goodRev / totalAfterCascade).toFixed(4);
-      }
-
-      return data;
-    })
-    .then((data)=> {
-      console.log('hehehe' + data);
-      response.render('home', { items: data, threshold: thres, cascading: cascade, direction: up });
-
-      MongoClient.connect('mongodb://localhost:27017/local', function (err, db) {
-              db.collection('med_elet').update({ asin: value1 }, { $set: { threshold: thres, up: up, down: down } }, { multi: true });
-            });
-    })
-    .catch(reason => console.log(reason));
-
-  });
-});
+	return {
+		index: offset,
+		threshold: threshold,
+		cascadeDirection: cascadeDirection
+	}
+}
 
 app.listen(3001);

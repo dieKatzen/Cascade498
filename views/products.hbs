@@ -1,35 +1,74 @@
-<div class="topBar">
-<input class="itemButton" type="button" onclick="location.href='/product?order=count';" value="Order by Count" />
-<input class="itemButton" type="button" onclick="location.href='/product';" value="Reset Order" />
-</div>
-<div class="prodStats">
-  &nbsp
-  <form action="/product/{{items.1.asin}}" method="post">
-    Set Threshold :
-      <input class="topBarChildren" type="text" name="cascadeNum"></input>
-      <input class="topBarChildren" type="submit"></input>
-  </form>
-</div>
-<div class="productHome">
-{{#each products}}
-<div class="singleItem" >
-<div class="item">
-  <p> Dir:
-  {{#if this.up}}
-  up
-  {{/if}}
-  {{#if this.down}}
-  down
-  {{/if}}
-    <p>{{@index}}.<p>
-    <p>Thres: {{this.threshold}}<p>
-    <p>PID: {{this.asin}}<p>
-    <p> #: {{this.count}}<p>
-<input class="itemButton" type="button" onclick="location.href='/product/{{this.asin}}';" value="product analytics" />
-</div>
-</div>
-{{/each}}
-<!-- <p>{{debug}}<p>
-<p>{{test}}<p>
-  <p>HEY<p> -->
-</div>
+<main class="container">
+	<div class="row">
+		<div class="col-sm-12">
+			<h1>Product Reviews</h1>
+		</div>
+	</div>
+	<div class="row">
+		<div class="col-md-6">
+			<dl>
+				<dt>Total Count</dt>
+				<dd>{{this.count}}</dd>
+				<dt>Average Score</dt>
+				<dd>{{this.averageScore}}</dd>
+				<dt>Average Threshold</dt>
+				<dd>{{this.averageThreshold}}</dd>
+			</dl>
+		</div>
+		<div class="col-md-6">
+			<canvas id="barChart" width="300" height="200"></canvas>
+		</div>
+	</div>
+	<div class="row">
+		<div class="col-sm-12">
+			<table id="productsTable" class="table table-striped table-bordered">
+				<thead>
+					<th>Product ID</th>
+					<th>Score</th>
+					<th>Number of reviews</th>
+					<th>Threshold</th>
+					<th>Cascade direction</th>
+				</thead>
+				{{#each this.products}}
+					{{#if this._id}}
+						<tr>
+							<td><a href="/{{this._id}}" title="Go to product {{this._id}}">{{this._id}}</a></td>
+							<td>{{this.score}}</td>
+							<td>{{this.reviewCount}}</td>
+							<td>{{this.threshold}}</td>
+							<td>{{this.cascadeDirection}}</td>
+						</tr>
+					{{/if}}
+				{{/each}}
+			</table>
+		</div>
+	</div>
+</main>
+
+<script>
+	$(document).ready(function() {
+		$("#productsTable").tablesorter();
+	});
+
+	var bracketsData = [],
+		bracketsColor = [];
+	{{#each this.brackets}}
+		bracketsData.push({{this}});
+		bracketsColor.push('#8de098');
+	{{/each}}
+
+	var ctx = document.getElementById("barChart");
+	var myChart = new Chart(ctx, {
+		type: 'bar',
+		data: {
+			labels: ['0.0 - 0.1', '0.1 - 0.2', '0.2 - 0.3', '0.3 - 0.4', '0.4 - 0.5', '0.5 - 0.6', '0.6 - 0.7', '0.7 - 0.8', '0.8 - 0.9', '0.9 - 1.0'],
+			datasets: [{
+				label: 'Threshold Distribution',
+				data: bracketsData,
+				backgroundColor: bracketsColor,
+				borderColor: bracketsColor,
+				borderWidth: 1
+			}]
+		}
+	});
+</script>
