@@ -182,9 +182,10 @@ app.get('/:id', (request, response, next) => {
 			// create an object from the database
 			collection.find({ "_id": request.params.id }).toArray(function (err, results) {
 				var product = results[0];
-				product.helpful = findMostHelpful(product);
-
-				response.render('home', product);
+				if (product !== undefined) {
+					product.helpful = findMostHelpful(product);
+					response.render('home', product);
+				}
 			});
 		});
 	});

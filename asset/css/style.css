@@ -14,3 +14,10 @@ thead tr .headerSortUp {
 thead tr .headerSortDown {
 	background-image: url('../img/desc.gif');
 }
+.helpful-square {
+	display: inline-block;
+	width: 15px;
+	height: 15px;
+	background-color: #FFCF40;
+	margin-right: 10px;
+}
