@@ -151,25 +151,40 @@ app.get('/', (request, response, next) => {
 			collection.find().toArray(function (err, results) {
 				var averageScore = 0,
 					averageThreshold = 0,
-					brackets = [0,0,0,0,0,0,0,0,0,0];
+					brackets = [0,0,0,0,0,0,0,0,0,0],
+					averageOffset = 0,
+					thresholdVariation = 0;
 
 				for (var i = 0; i < results.length; i++) {
-					averageScore += parseFloat(results[i].score);
-					averageThreshold += parseFloat(results[i].threshold);
+					var product = results[i];
+					var thisThreshold = parseFloat(product.threshold);
+					averageScore += parseFloat(product.score);
+					averageThreshold += thisThreshold;
 
-					var index = parseFloat(results[i].threshold).toFixed(1) * 10;
+					var index = thisThreshold.toFixed(1) * 10;
 					brackets[index]++;
+
+					var helpful = findMostHelpful(product);
+					averageOffset += (helpful.index / product.reviews.length);
+					var difference = thisThreshold - helpful.threshold;
+					thresholdVariation += difference > 0 ? difference : -difference;
+
+					results[i].helpfulIndex = (helpful.index / product.reviews.length * 100).toFixed(2);
 				}
 
 				averageScore = (averageScore / results.length).toFixed(2);
 				averageThreshold = (averageThreshold / results.length).toFixed(4);
+				thresholdVariation = (thresholdVariation / results.length).toFixed(4);
+				averageOffset = (averageOffset / results.length * 100).toFixed(2);
 
 				response.render('products', {
 					products: results,
 					averageScore: averageScore,
 					averageThreshold: averageThreshold,
 					brackets: brackets,
-					count: results.length
+					count: results.length,
+					thresholdVariation: thresholdVariation,
+					averageOffset: averageOffset
 				});
 			});
 		});
@@ -276,7 +291,7 @@ function helpfulCascade(offset, product) {
 	}
 
 	return {
-		index: offset,
+		index: (offset + 1),
 		threshold: threshold,
 		cascadeDirection: cascadeDirection
 	}

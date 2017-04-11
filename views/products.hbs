@@ -7,12 +7,16 @@
 	<div class="row">
 		<div class="col-md-6">
 			<dl>
-				<dt>Total Count</dt>
+				<dt>Total count</dt>
 				<dd>{{this.count}}</dd>
-				<dt>Average Score</dt>
+				<dt>Average score</dt>
 				<dd>{{this.averageScore}}</dd>
-				<dt>Average Threshold</dt>
+				<dt>Average threshold</dt>
 				<dd>{{this.averageThreshold}}</dd>
+				<dt>Average position of the most helpful review</dt>
+				<dd>{{this.averageOffset}}%</dd>
+				<dt>Average threshold variation after the most helpful review</dt>
+				<dd>{{this.thresholdVariation}}</dd>
 			</dl>
 		</div>
 		<div class="col-md-6">
@@ -28,6 +32,7 @@
 					<th>Number of reviews</th>
 					<th>Threshold</th>
 					<th>Cascade direction</th>
+					<th>Most helpful distance (%)</th>
 				</thead>
 				{{#each this.products}}
 					{{#if this._id}}
@@ -37,6 +42,7 @@
 							<td>{{this.reviewCount}}</td>
 							<td>{{this.threshold}}</td>
 							<td>{{this.cascadeDirection}}</td>
+							<td>{{this.helpfulIndex}}</td>
 						</tr>
 					{{/if}}
 				{{/each}}
